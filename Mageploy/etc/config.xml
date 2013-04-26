@@ -66,6 +66,10 @@
                     <disabled>0</disabled>
                     <class>PugMoRe_Mageploy_Model_Action_Store_StoreView</class>
                 </store_storeview>
+                <promotion_shoppingcartrule>
+                    <disabled>0</disabled>
+                    <class>PugMoRe_Mageploy_Model_Action_Promotion_ShoppingCartRule</class>
+                </promotion_shoppingcartrule>
             </actions>
         </mageploy>
         
