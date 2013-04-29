@@ -68,7 +68,7 @@
                 </store_storeview>
                 <promotion_shoppingcartrule>
                     <disabled>0</disabled>
-                    <class>PugMoRe_Mageploy_Model_Action_Promotion_ShoppingCartRule</class>
+                    <class>PugMoRe_Mageploy_Model_Action_Promotion_Quote</class>
                 </promotion_shoppingcartrule>
             </actions>
         </mageploy>

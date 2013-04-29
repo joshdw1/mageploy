@@ -72,10 +72,17 @@ class PugMoRe_Mageploy_Model_Action_Promotion_Quote extends PugMoRe_Mageploy_Mod
                 $new = 'existing';
             }
 
+            /* Delete a rule */
             if (isset($params['id'])) {
                 $rule = Mage::getModel('salesrule/rule')->load($params['id']);
-                $params['id'] = 'delete-' . $rule->getName();
+                $params['id']   = 'delete-' . $rule->getName();
                 $params['name'] = $rule->getName();
+            }
+
+            /* Edit a rule */
+            if (isset($params['rule_id'])) {
+                $rule = Mage::getModel('salesrule/rule')->load($params['rule_id']);
+                $params['rule_id'] = 'edit-' . $rule->getName();
             }
 
             $result[self::INDEX_EXECUTOR_CLASS]    = get_class($this);
@@ -128,9 +135,24 @@ class PugMoRe_Mageploy_Model_Action_Promotion_Quote extends PugMoRe_Mageploy_Mod
             $parameters['website_ids'][] = $r->getWebsiteId();
         }
 
-        /* Delete? */
-        if (isset($parameters['id']))
-        {
+        /* Edit */
+        if (isset($parameters['rule_id'])) {
+            if (preg_match('/^(edit\-(.+?)$)/', $parameters['rule_id'], $matches)) {
+                $name = $matches[2];
+                $rule = Mage::getModel('salesrule/rule')->load($name, 'name');
+
+                if (!$rule->getId()) {
+                    throw new Exception('Could not find a matching salesrule to edit.');
+                }
+
+                $parameters['rule_id'] = $rule->getId();
+            } else {
+                throw new Exception('Invalid UUID, unable to update rule.');
+            }
+        }
+
+        /* Delete */
+        if (isset($parameters['id'])) {
             if (preg_match('/^(delete\-(.+?)$)/', $parameters['id'], $matches)) {
                 $name = $matches[2];
                 $rule = Mage::getModel('salesrule/rule')->load($name, 'name');
@@ -141,7 +163,9 @@ class PugMoRe_Mageploy_Model_Action_Promotion_Quote extends PugMoRe_Mageploy_Mod
 
                 $parameters['id'] = $rule->getId();
             }
-        }
+        } else {
+                throw new Exception('Invalid UUID, unable to delete rule.');
+            }
 
         $request = new Mage_Core_Controller_Request_Http();
         $request->setPost($parameters);
