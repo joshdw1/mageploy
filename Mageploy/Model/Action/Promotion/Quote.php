@@ -4,11 +4,11 @@
  *
  * @author Josh Williams <josh.williams@gmail.com>
  */
-class PugMoRe_Mageploy_Model_Action_Promotion_ShoppingCartRule extends PugMoRe_Mageploy_Model_Action_Abstract {
+class PugMoRe_Mageploy_Model_Action_Promotion_Quote extends PugMoRe_Mageploy_Model_Action_Abstract {
     const VERSION = '1';
     
     protected $_code = 'promo_quote';
-    protected $_blankableParams = array('key', 'form_key');
+    protected $_blankableParams = array('key', 'form_key', 'back', 'page', 'limit');
 
     protected function _getVersion()
     {
@@ -22,7 +22,7 @@ class PugMoRe_Mageploy_Model_Action_Promotion_ShoppingCartRule extends PugMoRe_M
 
         if ($this->_request->getModuleName() == 'admin') {
             if ($this->_request->getControllerName() == 'promo_quote') {
-                if (in_array($this->_request->getActionName(), array('save'))) {
+                if (in_array($this->_request->getActionName(), array('save', 'delete'))) {
                     return true;
                 }
             }
@@ -67,17 +67,24 @@ class PugMoRe_Mageploy_Model_Action_Promotion_ShoppingCartRule extends PugMoRe_M
             }
 
             $new = 'new';
-            if (isset($params['rule_id'])) {
+
+            if (isset($params['rule_id']) || isset($params['id'])) {
                 $new = 'existing';
             }
 
-            $result[self::INDEX_EXECUTOR_CLASS] = get_class($this);
+            if (isset($params['id'])) {
+                $rule = Mage::getModel('salesrule/rule')->load($params['id']);
+                $params['id'] = 'delete-' . $rule->getName();
+                $params['name'] = $rule->getName();
+            }
+
+            $result[self::INDEX_EXECUTOR_CLASS]    = get_class($this);
             $result[self::INDEX_CONTROLLER_MODULE] = $this->_request->getControllerModule();
-            $result[self::INDEX_CONTROLLER_NAME] = $this->_request->getControllerName();
-            $result[self::INDEX_ACTION_NAME] = $this->_request->getActionName();
-            $result[self::INDEX_ACTION_PARAMS] = $this->_encodeParams($params);
-            $result[self::INDEX_ACTION_DESCR] = sprintf("%s %s shopping cart price rule '%s'", ucfirst($this->_request->getActionName()), $new, $params['name']);
-            $result[self::INDEX_VERSION] = $this->_getVersion();
+            $result[self::INDEX_CONTROLLER_NAME]   = $this->_request->getControllerName();
+            $result[self::INDEX_ACTION_NAME]       = $this->_request->getActionName();
+            $result[self::INDEX_ACTION_PARAMS]     = $this->_encodeParams($params);
+            $result[self::INDEX_ACTION_DESCR]      = sprintf("%s %s shopping cart price rule '%s'", ucfirst($this->_request->getActionName()), $new, $params['name']);
+            $result[self::INDEX_VERSION]           = $this->_getVersion();
         }
         
         return $result;
@@ -92,7 +99,7 @@ class PugMoRe_Mageploy_Model_Action_Promotion_ShoppingCartRule extends PugMoRe_M
         }
 
         $parameters = $this->_decodeParams($encodedParameters);
-        
+
         /* Customer Group IDs */
         $collection = Mage::getModel('customer/group')
                         ->getCollection()
@@ -121,11 +128,26 @@ class PugMoRe_Mageploy_Model_Action_Promotion_ShoppingCartRule extends PugMoRe_M
             $parameters['website_ids'][] = $r->getWebsiteId();
         }
 
+        /* Delete? */
+        if (isset($parameters['id']))
+        {
+            if (preg_match('/^(delete\-(.+?)$)/', $parameters['id'], $matches)) {
+                $name = $matches[2];
+                $rule = Mage::getModel('salesrule/rule')->load($name, 'name');
+
+                if (!$rule->getId()) {
+                    throw new Exception('Could not find a matching salesrule to delete.');
+                }
+
+                $parameters['id'] = $rule->getId();
+            }
+        }
+
         $request = new Mage_Core_Controller_Request_Http();
         $request->setPost($parameters);
         $_SERVER['REQUEST_METHOD'] = 'POST';
         $request->setQuery($parameters);
+
         return $request;
     }
-    
 }
