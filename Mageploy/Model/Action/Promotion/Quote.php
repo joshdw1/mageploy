@@ -15,7 +15,8 @@ class PugMoRe_Mageploy_Model_Action_Promotion_Quote extends PugMoRe_Mageploy_Mod
         return Mage::helper('pugmore_mageploy')->getVersion(2).'.'.self::VERSION;
     }
     
-    public function match() {
+    public function match() 
+    {
         if (!$this->_request) {
             return false;
         }
@@ -66,23 +67,19 @@ class PugMoRe_Mageploy_Model_Action_Promotion_Quote extends PugMoRe_Mageploy_Mod
                 $params['website_ids'][] = $r->getCode();
             }
 
-            $new = 'new';
-
-            if (isset($params['rule_id']) || isset($params['id'])) {
-                $new = 'existing';
-            }
-
-            /* Delete a rule */
             if (isset($params['id'])) {
-                $rule = Mage::getModel('salesrule/rule')->load($params['id']);
-                $params['id']   = 'delete-' . $rule->getName();
-                $params['name'] = $rule->getName();
-            }
-
-            /* Edit a rule */
-            if (isset($params['rule_id'])) {
-                $rule = Mage::getModel('salesrule/rule')->load($params['rule_id']);
+                /* Delete a rule */
+                $rule         = Mage::getModel('salesrule/rule')->load($params['id']);
+                $params['id'] = 'delete-' . $rule->getName();
+                $logName      = $rule->getName();
+            } else if (isset($params['rule_id'])) {
+                /* Edit a rule */
+                $rule              = Mage::getModel('salesrule/rule')->load($params['rule_id']);
                 $params['rule_id'] = 'edit-' . $rule->getName();
+                $logName           = $rule->getName();
+            } else {
+                /* New rule */
+                $logName = $params['name'];
             }
 
             $result[self::INDEX_EXECUTOR_CLASS]    = get_class($this);
@@ -90,7 +87,12 @@ class PugMoRe_Mageploy_Model_Action_Promotion_Quote extends PugMoRe_Mageploy_Mod
             $result[self::INDEX_CONTROLLER_NAME]   = $this->_request->getControllerName();
             $result[self::INDEX_ACTION_NAME]       = $this->_request->getActionName();
             $result[self::INDEX_ACTION_PARAMS]     = $this->_encodeParams($params);
-            $result[self::INDEX_ACTION_DESCR]      = sprintf("%s %s shopping cart price rule '%s'", ucfirst($this->_request->getActionName()), $new, $params['name']);
+            $result[self::INDEX_ACTION_DESCR]      = sprintf(
+                                                        "%s %s shopping cart price rule '%s'", 
+                                                        ucfirst($this->_request->getActionName()), 
+                                                        isset($params['rule_id']) || isset($params['id']) ? 'existing' : 'new', 
+                                                        $logName
+                                                    );
             $result[self::INDEX_VERSION]           = $this->_getVersion();
         }
         
@@ -162,10 +164,10 @@ class PugMoRe_Mageploy_Model_Action_Promotion_Quote extends PugMoRe_Mageploy_Mod
                 }
 
                 $parameters['id'] = $rule->getId();
-            }
-        } else {
+            } else {
                 throw new Exception('Invalid UUID, unable to delete rule.');
             }
+        }
 
         $request = new Mage_Core_Controller_Request_Http();
         $request->setPost($parameters);
