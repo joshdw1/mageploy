@@ -39,9 +39,13 @@ class PugMoRe_Mageploy_Model_Action_Cms_Block extends PugMoRe_Mageploy_Model_Act
             $params = $this->_request->getParams();
             
             // convert store ids
-            foreach ($params['stores'] as $i => $storeId) {
-                $storeUuid = Mage::app()->getStore($storeId)->getCode();
-                $params['stores'][$i] = $storeUuid;
+            if (is_array($params['store']) && count($params['store'])) {
+                foreach ($params['stores'] as $i => $storeId) {
+                    $storeUuid = Mage::app()->getStore($storeId)->getCode();
+                    $params['stores'][$i] = $storeUuid;
+                }
+            } else {
+                $params['stores'] = array();
             }
 
             // convert block_id
